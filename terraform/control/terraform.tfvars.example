@@ -1,0 +1,20 @@
+# AWS Region Configuration
+region             = "us-east-1"
+availability_zones = ["us-east-1a", "us-east-1b"]
+
+# SSH Key Configuration
+# Ensure this key exists in your AWS account
+key_name = "your-ssh-key-name"
+
+# Owner Information
+owner_name  = "Your Name"
+owner_email = "your.email@example.com"
+
+# Instance Configuration
+instance_name        = "aws-admin-server"
+server_instance_type = "t3a.medium"
+
+# Security Configuration
+# Leave empty to auto-detect your current IP
+# Or specify a CIDR block (e.g., "203.0.113.0/32")
+allowlist_ip = ""

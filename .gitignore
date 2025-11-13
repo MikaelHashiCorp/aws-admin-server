@@ -1,0 +1,52 @@
+# Terraform state files
+*.tfstate
+*.tfstate.*
+*.tfstate.backup
+
+# Terraform variable files (may contain sensitive data)
+terraform.tfvars
+*.auto.tfvars
+
+# Terraform provider cache
+.terraform/
+.terraform.lock.hcl
+
+# Debug and log files
+terraform-debug.log
+*.log
+
+# Crash logs
+crash.log
+crash.*.log
+
+# Override files
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# CLI configuration files
+.terraformrc
+terraform.rc
+
+# Packer cache
+packer_cache/
+
+# SSH keys
+*.pem
+*.ppk
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Environment files
+.env
+.env.local
