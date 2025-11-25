@@ -121,21 +121,97 @@ else
   echo "   ⚠️  Expected Ubuntu 24.04"
 fi
 
+# Check HashiStack service status
+echo ""
+echo "7. Checking HashiStack service status..."
+
+CONSUL_STATUS=$(ssh -i "$SSH_KEY_PATH" \
+  -o StrictHostKeyChecking=no \
+  -o ConnectTimeout=5 \
+  ubuntu@"$INSTANCE_IP" "systemctl is-active consul" 2>/dev/null || echo "inactive")
+
+NOMAD_STATUS=$(ssh -i "$SSH_KEY_PATH" \
+  -o StrictHostKeyChecking=no \
+  -o ConnectTimeout=5 \
+  ubuntu@"$INSTANCE_IP" "systemctl is-active nomad" 2>/dev/null || echo "inactive")
+
+VAULT_STATUS=$(ssh -i "$SSH_KEY_PATH" \
+  -o StrictHostKeyChecking=no \
+  -o ConnectTimeout=5 \
+  ubuntu@"$INSTANCE_IP" "systemctl is-active vault" 2>/dev/null || echo "inactive")
+
+echo "   Consul: $CONSUL_STATUS"
+echo "   Nomad: $NOMAD_STATUS"
+echo "   Vault: $VAULT_STATUS"
+
+# Verify HashiStack services are functional
+echo ""
+echo "8. Verifying HashiStack service functionality..."
+
+CONSUL_MEMBERS=$(ssh -i "$SSH_KEY_PATH" \
+  -o StrictHostKeyChecking=no \
+  -o ConnectTimeout=5 \
+  ubuntu@"$INSTANCE_IP" "consul members 2>&1" || echo "error")
+
+if echo "$CONSUL_MEMBERS" | grep -q "alive"; then
+  echo "   ✅ Consul is functional (members visible)"
+else
+  echo "   ❌ Consul is not functional: $CONSUL_MEMBERS"
+fi
+
+NOMAD_SERVERS=$(ssh -i "$SSH_KEY_PATH" \
+  -o StrictHostKeyChecking=no \
+  -o ConnectTimeout=5 \
+  ubuntu@"$INSTANCE_IP" "nomad server members 2>&1" || echo "error")
+
+if echo "$NOMAD_SERVERS" | grep -q "alive"; then
+  echo "   ✅ Nomad is functional (server members visible)"
+else
+  echo "   ❌ Nomad is not functional: $NOMAD_SERVERS"
+fi
+
+VAULT_STATUS_CHECK=$(ssh -i "$SSH_KEY_PATH" \
+  -o StrictHostKeyChecking=no \
+  -o ConnectTimeout=5 \
+  ubuntu@"$INSTANCE_IP" "VAULT_ADDR=http://127.0.0.1:8200 vault status 2>&1" || echo "error")
+
+if echo "$VAULT_STATUS_CHECK" | grep -q "Initialized"; then
+  echo "   ✅ Vault is functional (responding to queries)"
+else
+  echo "   ❌ Vault is not functional: $VAULT_STATUS_CHECK"
+fi
+
 # Summary
 echo ""
 echo "============================================"
-if [ ${#MISSING_PACKAGES[@]} -eq 0 ]; then
+if [ ${#MISSING_PACKAGES[@]} -eq 0 ] && \
+   [ "$CONSUL_STATUS" = "active" ] && \
+   [ "$NOMAD_STATUS" = "active" ] && \
+   [ "$VAULT_STATUS" = "active" ] && \
+   echo "$CONSUL_MEMBERS" | grep -q "alive" && \
+   echo "$NOMAD_SERVERS" | grep -q "alive" && \
+   echo "$VAULT_STATUS_CHECK" | grep -q "Initialized"; then
   echo "  ✅ All validation checks passed!"
   echo "============================================"
   echo ""
   echo "Instance is ready for use:"
   echo "  ssh -i $SSH_KEY_PATH ubuntu@$INSTANCE_IP"
+  echo ""
+  echo "HashiStack Services:"
+  echo "  Consul UI: http://$INSTANCE_IP:8500"
+  echo "  Nomad UI:  http://$INSTANCE_IP:4646"
+  echo "  Vault API: http://$INSTANCE_IP:8200"
 else
   echo "  ⚠️  Validation completed with warnings"
   echo "============================================"
   echo ""
-  echo "Missing packages: ${MISSING_PACKAGES[*]}"
-  echo "You may need to install them manually or update the user-data script"
+  if [ ${#MISSING_PACKAGES[@]} -gt 0 ]; then
+    echo "Missing packages: ${MISSING_PACKAGES[*]}"
+  fi
+  echo "Service status:"
+  echo "  Consul: $CONSUL_STATUS"
+  echo "  Nomad:  $NOMAD_STATUS"
+  echo "  Vault:  $VAULT_STATUS"
 fi
 echo ""
 

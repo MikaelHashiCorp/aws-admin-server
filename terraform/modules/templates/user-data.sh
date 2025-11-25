@@ -62,13 +62,90 @@ timedatectl set-timezone UTC
 # Create workspace directories
 echo "Creating workspace directories..."
 mkdir -p /opt/hashicorp/{consul,nomad,vault,packer,terraform}
+mkdir -p /opt/consul/data
+mkdir -p /opt/nomad/data
+mkdir -p /opt/vault/data
 chown -R ubuntu:ubuntu /opt/hashicorp
+chown -R consul:consul /opt/consul
+chown -R nomad:nomad /opt/nomad
+chown -R vault:vault /opt/vault
 
-# Enable and start services (but don't run them by default)
-echo "Configuring services..."
+# Configure Consul
+echo "Configuring Consul..."
+cat > /etc/consul.d/consul.hcl <<'EOF'
+datacenter = "dc1"
+data_dir = "/opt/consul/data"
+client_addr = "0.0.0.0"
+bind_addr = "{{ GetPrivateInterfaces | attr \"address\" }}"
+advertise_addr = "{{ GetPrivateInterfaces | attr \"address\" }}"
+server = true
+bootstrap_expect = 1
+ui_config {
+  enabled = true
+}
+log_level = "INFO"
+EOF
+
+chown consul:consul /etc/consul.d/consul.hcl
+chmod 640 /etc/consul.d/consul.hcl
+
+# Configure Nomad - Use existing config which is properly setup
+echo "Using default Nomad configuration..."
+
+# Configure Vault
+echo "Configuring Vault..."
+cat > /etc/vault.d/vault.hcl <<'EOF'
+ui = true
+storage "file" {
+  path = "/opt/vault/data"
+}
+
+listener "tcp" {
+  address     = "0.0.0.0:8200"
+  tls_disable = 1
+}
+
+log_level = "INFO"
+EOF
+
+chown vault:vault /etc/vault.d/vault.hcl
+chmod 640 /etc/vault.d/vault.hcl
+
+# Set Vault environment variable system-wide
+echo "export VAULT_ADDR=http://127.0.0.1:8200" >> /etc/environment
+echo "export VAULT_ADDR=http://127.0.0.1:8200" >> /etc/profile.d/vault.sh
+chmod +x /etc/profile.d/vault.sh
+
+# Enable and start services
+echo "Starting services..."
 systemctl enable consul
 systemctl enable nomad
 systemctl enable vault
+
+echo "Starting Consul (may take up to 2 minutes)..."
+systemctl start consul || echo "Consul start reported error but service may still be running"
+sleep 5
+
+echo "Starting Nomad..."
+systemctl start nomad || echo "Nomad start reported error but service may still be running"
+sleep 3
+
+echo "Starting Vault..."
+systemctl start vault || echo "Vault start reported error but service may still be running"
+sleep 5
+
+# Check service status
+echo "Checking service status..."
+systemctl status consul --no-pager || true
+systemctl status nomad --no-pager || true
+systemctl status vault --no-pager || true
+
+# Verify HashiStack services
+echo "Verifying HashiStack services..."
+export VAULT_ADDR=http://127.0.0.1:8200
+consul members || echo "Consul not ready yet"
+nomad server members || echo "Nomad not ready yet"
+VAULT_ADDR=http://127.0.0.1:8200 vault status || echo "Vault not ready yet"
 
 echo "=== User-data script completed ==="
 date
