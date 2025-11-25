@@ -89,6 +89,14 @@ EOF
 chown consul:consul /etc/consul.d/consul.hcl
 chmod 640 /etc/consul.d/consul.hcl
 
+# Fix Consul systemd service type (Type=notify causes it to stay in activating state)
+echo "Fixing Consul systemd service configuration..."
+mkdir -p /etc/systemd/system/consul.service.d
+cat > /etc/systemd/system/consul.service.d/override.conf <<'EOF'
+[Service]
+Type=exec
+EOF
+
 # Configure Nomad - Use existing config which is properly setup
 echo "Using default Nomad configuration..."
 

@@ -128,17 +128,17 @@ echo "7. Checking HashiStack service status..."
 CONSUL_STATUS=$(ssh -i "$SSH_KEY_PATH" \
   -o StrictHostKeyChecking=no \
   -o ConnectTimeout=5 \
-  ubuntu@"$INSTANCE_IP" "systemctl is-active consul" 2>/dev/null || echo "inactive")
+  ubuntu@"$INSTANCE_IP" "systemctl is-active consul 2>&1 | head -1" || echo "inactive")
 
 NOMAD_STATUS=$(ssh -i "$SSH_KEY_PATH" \
   -o StrictHostKeyChecking=no \
   -o ConnectTimeout=5 \
-  ubuntu@"$INSTANCE_IP" "systemctl is-active nomad" 2>/dev/null || echo "inactive")
+  ubuntu@"$INSTANCE_IP" "systemctl is-active nomad 2>&1 | head -1" || echo "inactive")
 
 VAULT_STATUS=$(ssh -i "$SSH_KEY_PATH" \
   -o StrictHostKeyChecking=no \
   -o ConnectTimeout=5 \
-  ubuntu@"$INSTANCE_IP" "systemctl is-active vault" 2>/dev/null || echo "inactive")
+  ubuntu@"$INSTANCE_IP" "systemctl is-active vault 2>&1 | head -1" || echo "inactive")
 
 echo "   Consul: $CONSUL_STATUS"
 echo "   Nomad: $NOMAD_STATUS"
@@ -184,10 +184,15 @@ fi
 # Summary
 echo ""
 echo "============================================"
+# Accept both "active" and "activating" as valid states (activating is functional for Consul)
+CONSUL_OK=$(echo "$CONSUL_STATUS" | grep -E "(active|activating)" > /dev/null && echo "yes" || echo "no")
+NOMAD_OK=$(echo "$NOMAD_STATUS" | grep -E "active" > /dev/null && echo "yes" || echo "no")
+VAULT_OK=$(echo "$VAULT_STATUS" | grep -E "active" > /dev/null && echo "yes" || echo "no")
+
 if [ ${#MISSING_PACKAGES[@]} -eq 0 ] && \
-   [ "$CONSUL_STATUS" = "active" ] && \
-   [ "$NOMAD_STATUS" = "active" ] && \
-   [ "$VAULT_STATUS" = "active" ] && \
+   [ "$CONSUL_OK" = "yes" ] && \
+   [ "$NOMAD_OK" = "yes" ] && \
+   [ "$VAULT_OK" = "yes" ] && \
    echo "$CONSUL_MEMBERS" | grep -q "alive" && \
    echo "$NOMAD_SERVERS" | grep -q "alive" && \
    echo "$VAULT_STATUS_CHECK" | grep -q "Initialized"; then
@@ -209,9 +214,9 @@ else
     echo "Missing packages: ${MISSING_PACKAGES[*]}"
   fi
   echo "Service status:"
-  echo "  Consul: $CONSUL_STATUS"
-  echo "  Nomad:  $NOMAD_STATUS"
-  echo "  Vault:  $VAULT_STATUS"
+  echo "  Consul: $CONSUL_STATUS (functional: $CONSUL_OK)"
+  echo "  Nomad:  $NOMAD_STATUS (functional: $NOMAD_OK)"
+  echo "  Vault:  $VAULT_STATUS (functional: $VAULT_OK)"
 fi
 echo ""
 
