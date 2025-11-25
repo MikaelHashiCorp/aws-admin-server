@@ -20,6 +20,16 @@ resource "aws_security_group_rule" "ssh_ingress" {
   description       = "SSH access from allowlisted IP"
 }
 
+resource "aws_security_group_rule" "icmp_ingress" {
+  type              = "ingress"
+  from_port         = -1
+  to_port           = -1
+  protocol          = "icmp"
+  cidr_blocks       = [var.allowlist_ip]
+  security_group_id = aws_security_group.admin_server.id
+  description       = "ICMP (ping) from allowlisted IP"
+}
+
 resource "aws_security_group_rule" "consul_http" {
   type              = "ingress"
   from_port         = 8500

@@ -26,6 +26,9 @@ INSTANCE_IP=$(terraform output -raw instance_public_ip 2>/dev/null || echo "")
 INSTANCE_ID=$(terraform output -raw instance_id 2>/dev/null || echo "")
 SSH_KEY=$(terraform output -raw ssh_key_name 2>/dev/null || echo "")
 
+# Get region from terraform.tfvars
+REGION=$(grep '^region' terraform.tfvars | sed 's/region[[:space:]]*=[[:space:]]*"\(.*\)"/\1/' | tr -d ' ')
+
 if [ -z "$INSTANCE_IP" ]; then
   echo "   ❌ Could not retrieve instance IP from Terraform outputs"
   exit 1
@@ -34,12 +37,14 @@ fi
 echo "   ✅ Instance IP: $INSTANCE_IP"
 echo "   ✅ Instance ID: $INSTANCE_ID"
 echo "   ✅ SSH Key: $SSH_KEY"
+echo "   ✅ Region: $REGION"
 
 # Check instance state in AWS
 echo ""
 echo "2. Checking instance state in AWS..."
 INSTANCE_STATE=$(aws ec2 describe-instances \
   --instance-ids "$INSTANCE_ID" \
+  --region "$REGION" \
   --query 'Reservations[0].Instances[0].State.Name' \
   --output text 2>/dev/null || echo "unknown")
 

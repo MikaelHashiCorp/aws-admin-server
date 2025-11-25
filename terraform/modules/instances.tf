@@ -4,7 +4,7 @@ data "aws_ami" "ubuntu" {
 
   filter {
     name   = "name"
-    values = ["ubuntu/images/hvm-ssd/ubuntu-noble-24.04-amd64-server-*"]
+    values = ["ubuntu/images/hvm-ssd-gp3/ubuntu-noble-24.04-amd64-server-*"]
   }
 
   filter {
@@ -20,7 +20,7 @@ resource "aws_instance" "admin_server" {
   vpc_security_group_ids = [aws_security_group.admin_server.id]
   iam_instance_profile   = aws_iam_instance_profile.admin_server.name
 
-  user_data = data.template_file.user_data.rendered
+  user_data = local.user_data
 
   root_block_device {
     volume_type           = "gp3"
