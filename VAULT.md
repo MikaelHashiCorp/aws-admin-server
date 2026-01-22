@@ -43,14 +43,14 @@ This script will:
 
 ```
 Root Token:
-  hvs.B1UbCQUmfu0gEmkuKZ6RIhEl
+  hvs.xxxxxxxx
 
 Unseal Keys (need 3 of 5 to unseal):
-  Key 1: iCdE7vHJe4Rv5V1txT/gUskxYSUTJYDoV3zCzWNKy/C6
-  Key 2: cFQBilAw8k6qT7X1JmMpTm33Tzpx07yNIxovW8ElTRlW
-  Key 3: 8RAYBWrNbVAtr18YfnE88JwBboaCfOw+gxj0SfwlGYvW
-  Key 4: bPk0KKgIYc9BP1UyJ5LCRvEn2kSfd/4CjbXoA0PDhSTB
-  Key 5: xrlC4mI50eM3j3aibbqQ4G3U+ugdpip0vC8oEAiQoMko
+  Key 1: iCdExxxxxx
+  Key 2: cFQBxxxxxx
+  Key 3: 8RAYxxxxxx
+  Key 4: bPk0xxxxxx
+  Key 5: xrlCxxxxxx
 ```
 
 ## Unsealing Vault
