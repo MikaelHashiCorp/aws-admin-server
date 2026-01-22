@@ -206,6 +206,26 @@ if [ ${#MISSING_PACKAGES[@]} -eq 0 ] && \
   echo "  Consul UI: http://$INSTANCE_IP:8500"
   echo "  Nomad UI:  http://$INSTANCE_IP:4646"
   echo "  Vault API: http://$INSTANCE_IP:8200"
+  echo ""
+  
+  # Check Vault initialization status
+  VAULT_INITIALIZED=$(echo "$VAULT_STATUS_CHECK" | grep "^Initialized" | awk '{print $2}')
+  VAULT_SEALED=$(echo "$VAULT_STATUS_CHECK" | grep "^Sealed" | awk '{print $2}')
+  
+  if [ "$VAULT_INITIALIZED" = "false" ]; then
+    echo "⚠️  Vault Setup Required:"
+    echo "  Vault is running but not initialized."
+    echo "  To initialize and unseal Vault, run:"
+    echo "    ./setup-vault.sh"
+    echo ""
+  elif [ "$VAULT_SEALED" = "true" ]; then
+    echo "⚠️  Vault is Sealed:"
+    echo "  Vault is initialized but sealed."
+    echo "  To unseal Vault, run:"
+    echo "    ./unseal-vault.sh"
+    echo "  Or manually unseal with keys from: ~/vault-init.json"
+    echo ""
+  fi
 else
   echo "  ⚠️  Validation completed with warnings"
   echo "============================================"
@@ -217,6 +237,17 @@ else
   echo "  Consul: $CONSUL_STATUS (functional: $CONSUL_OK)"
   echo "  Nomad:  $NOMAD_STATUS (functional: $NOMAD_OK)"
   echo "  Vault:  $VAULT_STATUS (functional: $VAULT_OK)"
+  echo ""
+  
+  # Show Vault status even on warnings
+  VAULT_INITIALIZED=$(echo "$VAULT_STATUS_CHECK" | grep "^Initialized" | awk '{print $2}')
+  VAULT_SEALED=$(echo "$VAULT_STATUS_CHECK" | grep "^Sealed" | awk '{print $2}')
+  
+  if [ "$VAULT_INITIALIZED" = "false" ]; then
+    echo "ℹ️  Vault needs initialization. Run: ./setup-vault.sh"
+  elif [ "$VAULT_SEALED" = "true" ]; then
+    echo "ℹ️  Vault is sealed. Run: ./unseal-vault.sh"
+  fi
 fi
 echo ""
 
